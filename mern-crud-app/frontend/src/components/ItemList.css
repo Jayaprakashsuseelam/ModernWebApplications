@@ -1,0 +1,70 @@
+/* Style the table container */
+.table-container {
+    width: 80%;
+    margin: 20px auto;
+    text-align: center;
+}
+
+/* Style the table */
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 18px;
+    font-family: Arial, sans-serif;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* Table header */
+.styled-table thead {
+    background-color: #007bff;
+    color: white;
+}
+
+.styled-table th, .styled-table td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Table row hover effect */
+.styled-table tbody tr:hover {
+    background-color: #f2f2f2;
+}
+
+/* Button styles */
+.edit-btn {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    margin: 4px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    margin: 4px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+/* Hover effects */
+.edit-btn:hover {
+    background-color: #218838;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+/* No data message */
+.no-data {
+    font-size: 16px;
+    color: #888;
+    padding: 12px;
+}
