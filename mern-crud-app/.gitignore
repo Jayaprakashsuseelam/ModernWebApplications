@@ -3,7 +3,6 @@
 .gitignore
 package-lock.json
 node_modules/
-backend/.env
 frontend/node_modules/
 frontend/.gitignore
 frontend/package-lock.json
