@@ -2,15 +2,20 @@ import { Component, OnInit } from '@angular/core';
 import { Employee } from '../../models/employee';
 import { EmployeeService } from '../../services/employee.service';
 import { Router } from '@angular/router';
+import { NgFor } from '@angular/common';
+import { CommonModule } from '@angular/common';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 
 @Component({
   selector: 'app-employee-list',
   templateUrl: './employee-list.component.html',
-  styleUrls: ['./employee-list.component.css']
+  styleUrls: ['./employee-list.component.css'],
+  standalone: true,
+  imports: [CommonModule, RouterLink, RouterLinkActive]
 })
 export class EmployeeListComponent implements OnInit {
 
-  employees: Employee[];
+  employees: Employee[] = [];
 
   constructor(private employeeService: EmployeeService,
               private router: Router) { }
