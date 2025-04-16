@@ -1,7 +1,7 @@
 var app = angular.module("todoApp", []);
 
 app.controller("TodoController", function($scope, $http) {
-  const API = "http://127.0.0.1:8000/tasks";
+  const API = "https://fastapi-todo-backend-d6aa.onrender.com/tasks";
 
   $scope.tasks = [];
   $scope.newTask = { title: "", completed: false };
