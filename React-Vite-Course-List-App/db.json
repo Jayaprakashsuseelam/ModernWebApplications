@@ -1,0 +1,37 @@
+{
+  "courses": [
+    {
+      "id": "1",
+      "name": "React Basics",
+      "description": "Learn React from scratch"
+    },
+    {
+      "id": "2",
+      "name": "Node.js Fundamentals",
+      "description": "Backend with Node.js"
+    }
+  ],
+  "enquiries": [
+    {
+      "id": "820c",
+      "name": "Jayaprakash",
+      "email": "testmail@mail.com",
+      "courseId": "1",
+      "courseName": "React Basics"
+    },
+    {
+      "id": "1da0",
+      "name": "JP",
+      "email": "mail@mail.com",
+      "courseId": "2",
+      "courseName": "Node.js Fundamentals"
+    },
+    {
+      "id": "6592",
+      "name": "Jay",
+      "email": "mail@mails.com",
+      "courseId": "1",
+      "courseName": "React Basics"
+    }
+  ]
+}

@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "bulma": "^1.0.4",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vuetify": "^3.5.4",
+    "axios": "^1.6.7",
+    "@mdi/font": "^7.4.47"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.3",
     "vite": "^6.2.4",
-    "vite-plugin-vue-devtools": "^7.7.2"
+    "vite-plugin-vue-devtools": "^7.7.2",
+    "vite-plugin-vuetify": "^2.0.0"
   }
 }
