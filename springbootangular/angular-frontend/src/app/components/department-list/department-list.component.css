@@ -1,0 +1,18 @@
+/* Department List Component Styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.table {
+  margin-top: 20px;
+}
+
+.btn {
+  margin-right: 5px;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+} 
