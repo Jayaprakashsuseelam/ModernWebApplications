@@ -1,0 +1,8 @@
+# PostgreSQL Database Configuration
+# Copy this content to a file named .env and update with your actual database credentials
+
+DB_NAME=patient_management
+DB_USER=postgres
+DB_PASSWORD=your_password_here
+DB_HOST=localhost
+DB_PORT=5432 
