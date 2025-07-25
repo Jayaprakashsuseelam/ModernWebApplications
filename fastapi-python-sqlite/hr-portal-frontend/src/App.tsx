@@ -14,6 +14,8 @@ interface Employee {
   address?: string;
   emergency_contact?: string;
   is_active: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 const API_URL = "http://localhost:8000";
@@ -26,7 +28,7 @@ const initialEmployee = {
   department: "",
   position: "",
   hire_date: "",
-  salary: undefined,
+  salary: undefined as number | undefined,
   phone: "",
   address: "",
   emergency_contact: "",
@@ -58,6 +60,21 @@ function App() {
   const [empForm, setEmpForm] = useState({ ...initialEmployee });
   const [empFormError, setEmpFormError] = useState("");
   const [empFormSuccess, setEmpFormSuccess] = useState("");
+
+  // Edit employee state
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [editForm, setEditForm] = useState({ ...initialEmployee });
+  const [editFormError, setEditFormError] = useState("");
+  const [editFormSuccess, setEditFormSuccess] = useState("");
+
+  // View employee state
+  const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
+
+  // Filter state
+  const [filters, setFilters] = useState({
+    department: "",
+    is_active: "",
+  });
 
   // Login handler
   const handleLogin = async (e: React.FormEvent) => {
@@ -107,12 +124,16 @@ function App() {
     }
   };
 
-  // Fetch employees
+  // Fetch employees with filters
   const fetchEmployees = async () => {
     setLoading(true);
     setEmpError("");
     try {
-      const res = await fetch(`${API_URL}/employees/`, {
+      const params = new URLSearchParams();
+      if (filters.department) params.append("department", filters.department);
+      if (filters.is_active !== "") params.append("is_active", filters.is_active);
+      
+      const res = await fetch(`${API_URL}/employees/?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -160,10 +181,134 @@ function App() {
     }
   };
 
+  // View employee handler
+  const handleViewEmployee = async (employeeId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/employees/${employeeId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setEmpError("Failed to fetch employee details");
+        return;
+      }
+      const data = await res.json();
+      setViewingEmployee(data);
+    } catch (err) {
+      setEmpError("Error fetching employee details");
+    }
+  };
+
+  // Edit employee handler
+  const handleEditEmployee = (employee: Employee) => {
+    setEditingEmployee(employee);
+    setEditForm({
+      employee_id: employee.employee_id,
+      first_name: employee.first_name,
+      last_name: employee.last_name,
+      email: employee.email,
+      department: employee.department,
+      position: employee.position,
+      hire_date: employee.hire_date.split('T')[0], // Convert to date input format
+      salary: employee.salary,
+      phone: employee.phone || "",
+      address: employee.address || "",
+      emergency_contact: employee.emergency_contact || "",
+    });
+  };
+
+  // Update employee handler
+  const handleUpdateEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEditFormError("");
+    setEditFormSuccess("");
+    if (!editingEmployee) return;
+
+    try {
+      const res = await fetch(`${API_URL}/employees/${editingEmployee.employee_id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...editForm,
+          salary: editForm.salary ? Number(editForm.salary) : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setEditFormError(data.detail || "Failed to update employee");
+        return;
+      }
+      setEditFormSuccess("Employee updated successfully!");
+      setEditingEmployee(null);
+      setEditForm({ ...initialEmployee });
+      fetchEmployees();
+    } catch (err) {
+      setEditFormError("Failed to update employee");
+    }
+  };
+
+  // Delete employee handler
+  const handleDeleteEmployee = async (employeeId: string) => {
+    if (!confirm("Are you sure you want to delete this employee?")) return;
+    
+    try {
+      const res = await fetch(`${API_URL}/employees/${employeeId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setEmpError(data.detail || "Failed to delete employee");
+        return;
+      }
+      setEmpError("");
+      fetchEmployees();
+    } catch (err) {
+      setEmpError("Failed to delete employee");
+    }
+  };
+
+  // Activate/Deactivate employee handlers
+  const handleActivateEmployee = async (employeeId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/employees/${employeeId}/activate`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setEmpError("Failed to activate employee");
+        return;
+      }
+      setEmpError("");
+      fetchEmployees();
+    } catch (err) {
+      setEmpError("Failed to activate employee");
+    }
+  };
+
+  const handleDeactivateEmployee = async (employeeId: string) => {
+    try {
+      const res = await fetch(`${API_URL}/employees/${employeeId}/deactivate`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        setEmpError("Failed to deactivate employee");
+        return;
+      }
+      setEmpError("");
+      fetchEmployees();
+    } catch (err) {
+      setEmpError("Failed to deactivate employee");
+    }
+  };
+
   return (
     <div className="container py-5">
       <div className="row justify-content-center">
-        <div className="col-md-8 col-lg-6">
+        <div className="col-md-10 col-lg-8">
           <div className="text-center mb-4">
             <h1 className="display-4 fw-bold">HR Portal Demo</h1>
             <p className="lead text-secondary">FastAPI + React + Bootstrap</p>
@@ -263,26 +408,61 @@ function App() {
                   Logout
                 </button>
               </div>
+
+              {/* Filters */}
+              <div className="row g-2 mb-3">
+                <div className="col-md-4">
+                  <label className="form-label">Department</label>
+                  <input
+                    className="form-control"
+                    type="text"
+                    value={filters.department}
+                    onChange={e => setFilters({ ...filters, department: e.target.value })}
+                    placeholder="Filter by department"
+                  />
+                </div>
+                <div className="col-md-4">
+                  <label className="form-label">Status</label>
+                  <select
+                    className="form-select"
+                    value={filters.is_active}
+                    onChange={e => setFilters({ ...filters, is_active: e.target.value })}
+                  >
+                    <option value="">All</option>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+                <div className="col-md-4 d-flex align-items-end">
+                  <button
+                    className="btn btn-primary w-100"
+                    onClick={fetchEmployees}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                    ) : null}
+                    Apply Filters
+                  </button>
+                </div>
+              </div>
+
               <button
-                className="btn btn-success mb-3"
-                onClick={fetchEmployees}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm me-2"></span>
-                ) : null}
-                Fetch Employees
-              </button>
-              <button
-                className="btn btn-primary mb-3 ms-2"
+                className="btn btn-primary mb-3 me-2"
                 onClick={() => setShowEmpForm((v) => !v)}
               >
                 {showEmpForm ? "Cancel" : "Add New Employee"}
               </button>
+
               {empFormError && <div className="alert alert-danger text-center">{empFormError}</div>}
               {empFormSuccess && <div className="alert alert-success text-center">{empFormSuccess}</div>}
+              {editFormError && <div className="alert alert-danger text-center">{editFormError}</div>}
+              {editFormSuccess && <div className="alert alert-success text-center">{editFormSuccess}</div>}
+
+              {/* New Employee Form */}
               {showEmpForm && (
                 <form onSubmit={handleEmpForm} className="mb-4 border rounded p-3 bg-light">
+                  <h5>Add New Employee</h5>
                   <div className="row g-2">
                     <div className="col-md-6">
                       <label className="form-label">Employee ID</label>
@@ -332,6 +512,112 @@ function App() {
                   <button className="btn btn-success mt-3 w-100" type="submit">Create Employee</button>
                 </form>
               )}
+
+              {/* Edit Employee Form */}
+              {editingEmployee && (
+                <form onSubmit={handleUpdateEmployee} className="mb-4 border rounded p-3 bg-light">
+                  <h5>Edit Employee: {editingEmployee.first_name} {editingEmployee.last_name}</h5>
+                  <div className="row g-2">
+                    <div className="col-md-6">
+                      <label className="form-label">Employee ID</label>
+                      <input className="form-control" type="text" value={editForm.employee_id} onChange={e => setEditForm({ ...editForm, employee_id: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">First Name</label>
+                      <input className="form-control" type="text" value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Last Name</label>
+                      <input className="form-control" type="text" value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Email</label>
+                      <input className="form-control" type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Department</label>
+                      <input className="form-control" type="text" value={editForm.department} onChange={e => setEditForm({ ...editForm, department: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Position</label>
+                      <input className="form-control" type="text" value={editForm.position} onChange={e => setEditForm({ ...editForm, position: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Hire Date</label>
+                      <input className="form-control" type="date" value={editForm.hire_date} onChange={e => setEditForm({ ...editForm, hire_date: e.target.value })} required />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Salary</label>
+                      <input className="form-control" type="number" value={editForm.salary !== undefined ? String(editForm.salary) : ""} onChange={e => setEditForm({ ...editForm, salary: e.target.value ? Number(e.target.value) : undefined })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Phone</label>
+                      <input className="form-control" type="text" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Address</label>
+                      <input className="form-control" type="text" value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })} />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label">Emergency Contact</label>
+                      <input className="form-control" type="text" value={editForm.emergency_contact} onChange={e => setEditForm({ ...editForm, emergency_contact: e.target.value })} />
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <button className="btn btn-success me-2" type="submit">Update Employee</button>
+                    <button className="btn btn-secondary" type="button" onClick={() => { setEditingEmployee(null); setEditForm({ ...initialEmployee }); }}>
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* View Employee Modal */}
+              {viewingEmployee && (
+                <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                  <div className="modal-dialog modal-lg">
+                    <div className="modal-content">
+                      <div className="modal-header">
+                        <h5 className="modal-title">Employee Details</h5>
+                        <button type="button" className="btn-close" onClick={() => setViewingEmployee(null)}></button>
+                      </div>
+                      <div className="modal-body">
+                        <div className="row">
+                          <div className="col-md-6">
+                            <p><strong>Employee ID:</strong> {viewingEmployee.employee_id}</p>
+                            <p><strong>Name:</strong> {viewingEmployee.first_name} {viewingEmployee.last_name}</p>
+                            <p><strong>Email:</strong> {viewingEmployee.email}</p>
+                            <p><strong>Department:</strong> {viewingEmployee.department}</p>
+                            <p><strong>Position:</strong> {viewingEmployee.position}</p>
+                            <p><strong>Hire Date:</strong> {new Date(viewingEmployee.hire_date).toLocaleDateString()}</p>
+                          </div>
+                          <div className="col-md-6">
+                            <p><strong>Salary:</strong> {viewingEmployee.salary ? `$${viewingEmployee.salary.toLocaleString()}` : 'Not specified'}</p>
+                            <p><strong>Phone:</strong> {viewingEmployee.phone || 'Not specified'}</p>
+                            <p><strong>Address:</strong> {viewingEmployee.address || 'Not specified'}</p>
+                            <p><strong>Emergency Contact:</strong> {viewingEmployee.emergency_contact || 'Not specified'}</p>
+                            <p><strong>Status:</strong> 
+                              {viewingEmployee.is_active ? (
+                                <span className="badge bg-success ms-2">Active</span>
+                              ) : (
+                                <span className="badge bg-danger ms-2">Inactive</span>
+                              )}
+                            </p>
+                            <p><strong>Created:</strong> {new Date(viewingEmployee.created_at).toLocaleString()}</p>
+                            {viewingEmployee.updated_at && (
+                              <p><strong>Last Updated:</strong> {new Date(viewingEmployee.updated_at).toLocaleString()}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="modal-footer">
+                        <button type="button" className="btn btn-secondary" onClick={() => setViewingEmployee(null)}>Close</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {empError && <div className="alert alert-danger text-center">{empError}</div>}
               <div className="table-responsive">
                 <table className="table table-bordered table-hover align-middle">
@@ -343,6 +629,7 @@ function App() {
                       <th>Department</th>
                       <th>Position</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -360,11 +647,53 @@ function App() {
                             <span className="badge bg-danger">Inactive</span>
                           )}
                         </td>
+                        <td>
+                          <div className="btn-group btn-group-sm" role="group">
+                            <button 
+                              className="btn btn-outline-info" 
+                              onClick={() => handleViewEmployee(emp.employee_id)}
+                              title="View Details"
+                            >
+                              👁️
+                            </button>
+                            <button 
+                              className="btn btn-outline-warning" 
+                              onClick={() => handleEditEmployee(emp)}
+                              title="Edit"
+                            >
+                              ✏️
+                            </button>
+                            {emp.is_active ? (
+                              <button 
+                                className="btn btn-outline-secondary" 
+                                onClick={() => handleDeactivateEmployee(emp.employee_id)}
+                                title="Deactivate"
+                              >
+                                ⏸️
+                              </button>
+                            ) : (
+                              <button 
+                                className="btn btn-outline-success" 
+                                onClick={() => handleActivateEmployee(emp.employee_id)}
+                                title="Activate"
+                              >
+                                ▶️
+                              </button>
+                            )}
+                            <button 
+                              className="btn btn-outline-danger" 
+                              onClick={() => handleDeleteEmployee(emp.employee_id)}
+                              title="Delete"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {employees.length === 0 && !loading && (
                       <tr>
-                        <td colSpan={6} className="text-center text-secondary">
+                        <td colSpan={7} className="text-center text-secondary">
                           No employees to display
                         </td>
                       </tr>
